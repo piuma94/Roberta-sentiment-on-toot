@@ -113,7 +113,7 @@ bG_new=get_timeline_hashtag(hashtag = c("Glasgow"), instance = c("mastodon.socia
 ### SINCE ID IS WORKING FOR THE ID, NOT FOR THE DATE, SELECTING A CERTYAIN DATE WILL BE MORE DIFFICULT,
 ### PAY ATTENTION, THE TOOT HAS SOME INFOS INSIDE: -date -language -if image is inluded - link to th figure -description of the figure.
 
-### This modify theretrieved toots using a html package
+### This modify the retrieved toots using a html package
 bG1<-bG
 bG1$content=as.data.frame(purrr::map_chr(bG$content[], ~ rvest::html_text2(rvest::read_html(.)))) ### this convert all the data from http to text
 
@@ -180,7 +180,7 @@ bG1=bG1[bG1$nChar <=500,] ### taking only shortest toots that allow roberta work
 table(bG1$language) ## eng and en--gb 
 summary((bG1$nChar)) # short toots, no more htan 500 
 
-#### CLEANING STOPWORDS AND PUNCTUATION 
+#### CLEANING STOPWORDS AND PUNCTUATION FACULTATIVE SCRIPT PART
 bG1a=bG1
 bG1a$content=sapply(bG1$content,removePunctuation) ### this remove the punctuation, but the tokenization still do not work on long batch. can i do a general for loop? eventually? 
 ## also removing the stopwords, I have now lost all the hastags 
@@ -194,7 +194,6 @@ bG1_p=bG1[grepl ("park", bG1$content),] #### subsetting tweets regarding park
 
 #exp(scores)/sum(exp(scores))
 ## use previously evaluated function to elaborate the toots
-tokenizer$model_max_length=500 ### with this set to 700 it work to handle 100 toots
 
 
 
@@ -220,6 +219,7 @@ names(res.mat1)=c("Negative","Neutral","Positive")
 
 #bG1=bG1[,]
 ### THIS ELABORATE 100 TOOTS AT A TIME, TO THEN RBIND THE RESULTS 
+tokenizer$model_max_length=500 ### with this set to 700 it work to handle 100 toots
 
 for (i in seq(1,dim(bG1)[1],by=100)) {
   
@@ -240,7 +240,9 @@ out <- sapply(input_ids[] , function_model)  ### this are listed in a list of se
 # the first probability is for Negative
 res<-lapply(out,function_open)
 
-res.mat=do.call(rbind.data.frame, res) ### matrixing it 
+res.mat=do.call(rbind.data.frame, res) ### matrixing it
+rm(out)
+rm(res)
 # the first probability is for Negative
 # the second category is Neutral
 # the third category is Positive
@@ -252,6 +254,8 @@ print(apply(res.mat[,],2,summary)) ### glasgow is suscitating generally neutral 
 print(dim(res.mat)) ### 300 fine 
 res.mat1<-rbind(res.mat1,res.mat)
 print(dim(res.mat1)) ### 300 fine 
+gc(reset=T)
+unlink(paste0(normalizePath(tempdir()), "/", dir(tempdir())), recursive = TRUE) ### eliminate temporary files
 
 }
 
@@ -268,7 +272,7 @@ library( RColorBrewer)
 library( tm)
 library( dplyr)
 #### bG2 is my dataset 
-mytext <- Corpus (VectorSource( bG2))
+mytext <- Corpus (VectorSource( bG1$content))
 
 
 mytext <- mytext %>%
@@ -296,7 +300,7 @@ set.seed( 412 )# for reproducibility
 #frequency, the proportion of words to be rotated 90 degrees
 #(rot.per), and a colour chart for the words
 wordcloud (words = mywordsdf$word, freq = mywordsdf$freq
-           ,min.freq = 1 ,max.words=50 ,random.order=FALSE,
+           ,min.freq = 1 ,max.words=100 ,random.order=FALSE,
            rot.per=0.25, colors=brewer.pal (8, "Dark2")) ### ok it worked also with my fake dataset.
 
 
